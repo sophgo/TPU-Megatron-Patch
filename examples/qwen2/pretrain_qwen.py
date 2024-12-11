@@ -6,7 +6,19 @@ from functools import partial
 from typing import Union
 
 import torch
-import torch._dynamo
+# import torch._dynamo
+try:
+    import torch_tpu
+    from torch_tpu import workarounds
+except ImportError:
+    pass
+
+from torch_tpu import accelerator
+
+from distutils.util import strtobool
+if strtobool(os.environ.get('ENABLE_FRAMEWORK_DEBUGGER', "0")):
+    from nnmoduletools.module_debugger import register_hook
+
 from megatron.core import mpu
 from megatron.core.datasets.blended_megatron_dataset_builder import (
     BlendedMegatronDatasetBuilder,
@@ -37,7 +49,7 @@ from megatron_patch.model.qwen2.model import GPTModel
 from megatron_patch.model.qwen2.transformer_config import Qwen2TransformerConfig
 from megatron_patch.tokenizer import build_tokenizer, get_tokenizer
 
-torch._dynamo.config.suppress_errors = True
+# torch._dynamo.config.suppress_errors = True
 
 
 def model_provider(
@@ -78,6 +90,9 @@ def model_provider(
         seq_len_interpolation_factor=args.rotary_seq_len_interpolation_factor,
     )
 
+    if strtobool(os.environ.get('ENABLE_FRAMEWORK_DEBUGGER', "0")):
+        model.apply(register_hook)
+    
     return model
 
 

@@ -1,0 +1,6 @@
+pybind11
+transformers==4.41.2
+accelerate==0.30.1
+datasets
+netifaces
+nnmoduletools>=0.1.1
