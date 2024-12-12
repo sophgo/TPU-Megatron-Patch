@@ -184,6 +184,7 @@ torchrun ${DISTRIBUTED_ARGS} hf2mcore_qwen2_dense_and_moe_gqa.py \
     --untie-embeddings-and-output-weights \
     --no-bias-swiglu-fusion \
     --no-rope-fusion \
+    --no-gradient-accumulation-fusion \
     --use-rotary-position-embeddings \
     --disable-bias-linear \
     --add-qkv-bias \

@@ -11,9 +11,18 @@ from transformers import (
     AutoTokenizer,
 )
 
+try:
+    import torch_tpu
+    from torch_tpu import workarounds
+except ImportError:
+    pass
+
+from torch_tpu import accelerator
+
+
+from megatron.training import get_args
 from transformers.modeling_utils import WEIGHTS_INDEX_NAME, WEIGHTS_NAME, shard_checkpoint, load_sharded_checkpoint
 from megatron.training.initialize import initialize_megatron
-from megatron.training import get_args
 from megatron.training.checkpointing import get_checkpoint_name, get_checkpoint_tracker_filename, read_metadata
 from functools import partial
 from megatron.training.utils import get_ltor_masks_and_position_ids

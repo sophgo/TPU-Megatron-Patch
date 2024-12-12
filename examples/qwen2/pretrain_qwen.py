@@ -62,6 +62,7 @@ def model_provider(
 
     config = core_transformer_config_from_args(args, Qwen2TransformerConfig)
     use_te = args.transformer_impl == "transformer_engine"
+    
 
     if use_te:
         print_rank_0("building qwen2 model in TE...")
