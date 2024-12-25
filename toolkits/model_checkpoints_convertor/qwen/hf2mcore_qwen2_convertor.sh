@@ -18,7 +18,7 @@ HF_CKPT_PATH=${10}
 
 CURRENT_DIR="$( cd "$( dirname "$0" )" && pwd )"
 MEGATRON_PATH=$( dirname $(dirname $( dirname ${CURRENT_DIR})))
-export PYTHONPATH=$PYTHONPATH:${MEGATRON_PATH}:${MEGATRON_PATH}/Megatron-LM-240612
+# export PYTHONPATH=$PYTHONPATH:${MEGATRON_PATH}:${MEGATRON_PATH}/Megatron-LM-240612
 
 
 if [ $MODEL_SIZE = 0.5B ]; then
@@ -66,7 +66,7 @@ INTERMEDIATE_SIZE=18944
 MAX_POSITION_EMBEDDINGS=131072
 MAX_WINDOW_LAYERS=28
 NUM_ATTENTION_HEADS=28
-NUM_HIDDEN_LAYERS=28
+NUM_HIDDEN_LAYERS=1
 NUM_KEY_VALUE_HEADS=4
 RMS_NORM_EPS=1e-6
 ROPE_THETA=1000000
@@ -151,7 +151,9 @@ elif [ $USE_TE = false ]; then
                 "
 fi
 
+echo $PR
 if [ $PR = fp16 ]; then
+    echo "use fp16"
     pr_options=" \
 		    --fp16"
 
@@ -163,6 +165,8 @@ fi
 
 
 DISTRIBUTED_ARGS="--nproc_per_node 1 --nnodes 1 --node_rank 0 --master_addr $MASTER_ADDR --master_port $MASTER_PORT"
+
+echo $te_options 
 
 torchrun ${DISTRIBUTED_ARGS} hf2mcore_qwen2_dense_and_moe_gqa.py \
     --load ${SOURCE_CKPT_PATH} \

@@ -6,13 +6,17 @@ export CUDA_DEVICE_MAX_CONNECTIONS=1
 CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 echo "CURRENT_DIR: ${CURRENT_DIR}"
 MEGATRON_PATH=$( dirname $( dirname ${CURRENT_DIR}))
+# 如果PYTHONPATH中没有 MEGATRON_PATH ，则添加PYTHONPATH
+if [[ ${PYTHONPATH} != *${MEGATRON_PATH}* ]]; then
+    export PYTHONPATH=${MEGATRON_PATH}:${PYTHONPATH}
+fi
 
 
 function train() {
     
     export CMODEL_GLOBAL_MEM_SIZE=120000000000
     export CMODEL_FAST_EXEC=1
-    local PYTHONPATH=${MEGATRON_PATH}:${PYTHONPATH}
+    export DISABLE_CACHE=1
     
     pushd ${MEGATRON_PATH}
     source ${MEGATRON_PATH}/env.sh
@@ -30,7 +34,7 @@ function train() {
     DS_CONFIG=ds_config.json
     
     MODEL_SIZE=${1:-7B}
-    LAYERS=${2:-0}
+    LAYERS=${2:-1}
     TP=${3:-2}
     PP=${4:-1}
     BACKEND=${5:-sccl}
@@ -45,7 +49,7 @@ function train() {
         INTERMEDIATE_SIZE=296
         NUM_KEY_VALUE_HEADS=4
         RMS_NORM_EPS=1e-6
-        elif [ $MODEL_SIZE = '7B' ]; then
+    elif [ $MODEL_SIZE = '7B' ]; then
         echo "7B model"
         NUM_LAYERS=28
         HIDDEN_SIZE=3584
@@ -53,7 +57,7 @@ function train() {
         INTERMEDIATE_SIZE=18944
         NUM_KEY_VALUE_HEADS=4
         RMS_NORM_EPS=1e-6
-        elif [ $MODEL_SIZE = '72B' ]; then
+    elif [ $MODEL_SIZE = '72B' ]; then
         echo "72B model"
         NUM_LAYERS=80
         HIDDEN_SIZE=8192
@@ -138,6 +142,8 @@ function train() {
     --load ${CURRENT_DIR}/qwen-ckpts/Qwen2-0.5B \
     "
 
+    echo $megatron_options
+
     fuse_options=" \
     --no-gradient-accumulation-fusion \
     --no-bias-gelu-fusion \
@@ -173,27 +179,44 @@ function train() {
     extra_options=" \
     --distributed-backend ${BACKEND}"
     
-    for rank in `seq 0 $((TP*PP-1))`;
-    do
-        # echo \
-        MASTER_ADDR=127.0.0.1 \
-        MASTER_PORT=6000 \
-        RANK=$rank \
-        WORLD_SIZE=$((TP*PP)) \
-        LOCAL_RANK=$rank \
-        LOCAL_WORLD_SIZE=$((TP*PP)) \
-        python ${CURRENT_DIR}/pretrain_qwen.py \
-        ${megatron_options} \
-        ${fuse_options} \
-        ${te_options} \
-        ${dataset_option} \
-        ${pr_options} \
-        ${sft_option} \
-        ${gqa_options} \
-        ${extra_options} \
-        ${comm_overlap_option} \
-        ${tensorboard_option} &
-    done
+    # echo \
+    MASTER_ADDR=127.0.0.1 \
+    MASTER_PORT=6000 \
+    RANK=0 \
+    WORLD_SIZE=$((TP*PP)) \
+    LOCAL_RANK=0 \
+    LOCAL_WORLD_SIZE=$((TP*PP)) \
+    python ${CURRENT_DIR}/pretrain_qwen.py \
+    ${megatron_options} \
+    ${fuse_options} \
+    ${te_options} \
+    ${dataset_option} \
+    ${pr_options} \
+    ${sft_option} \
+    ${gqa_options} \
+    ${extra_options} \
+    ${comm_overlap_option} \
+    ${tensorboard_option} &
+    
+    
+    # echo \
+    MASTER_ADDR=127.0.0.1 \
+    MASTER_PORT=6000 \
+    RANK=1 \
+    WORLD_SIZE=$((TP*PP)) \
+    LOCAL_RANK=1 \
+    LOCAL_WORLD_SIZE=$((TP*PP)) \
+    python ${CURRENT_DIR}/pretrain_qwen.py \
+    ${megatron_options} \
+    ${fuse_options} \
+    ${te_options} \
+    ${dataset_option} \
+    ${pr_options} \
+    ${sft_option} \
+    ${gqa_options} \
+    ${extra_options} \
+    ${comm_overlap_option} \
+    ${tensorboard_option}
     
     set +x
     popd
@@ -204,24 +227,30 @@ function evaluate() {
     
     export CMODEL_GLOBAL_MEM_SIZE=120000000000
     export CMODEL_FAST_EXEC=1
-    local PYTHONPATH=${MEGATRON_PATH}:${PYTHONPATH}
     
-    rm -rf ${MEGATRON_PATH}/examples/qwen2/qwen-ckpts/Qwen2-0.5B-hf-to-mcore-te-tp1-pp1
-    mkdir -p ${MEGATRON_PATH}/examples/qwen2/qwen-ckpts/Qwen2-0.5B-hf-to-mcore-te-tp1-pp1
-    echo "1" > ${MEGATRON_PATH}/examples/qwen2/qwen-ckpts/Qwen2-0.5B-hf-to-mcore-te-tp1-pp1/latest_checkpointed_iteration.txt
+    
+    #     local PYTHONPATH=${MEGATRON_PATH}:${PYTHONPATH}
+    
+    #     rm -rf ${MEGATRON_PATH}/examples/qwen2/qwen-ckpts/Qwen2-0.5B-hf-to-mcore-te-tp1-pp1
+    #     mkdir -p ${MEGATRON_PATH}/examples/qwen2/qwen-ckpts/Qwen2-0.5B-hf-to-mcore-te-tp1-pp1
+    #     echo "1" > ${MEGATRON_PATH}/examples/qwen2/qwen-ckpts/Qwen2-0.5B-hf-to-mcore-te-tp1-pp1/latest_checkpointed_iteration.txt
     
     pushd ${MEGATRON_PATH}/toolkits/model_checkpoints_convertor/qwen
-
+    MODEL_SIZE=${1:-7B}
+    LAYERS=${2:-1}
+    TP=${3:-2}
+    PP=${4:-1}
+    
     bash hf2mcore_qwen2_convertor.sh \
-    0.5B \
+    7B \
     ${MEGATRON_PATH}/examples/qwen2/qwen-ckpts/Qwen2-0.5B-hf-to-mcore-te-tp1-pp1  \
     ${MEGATRON_PATH}/examples/qwen2/qwen-ckpts/Qwen2-0.5B-mcore-te-to-hf    \
-    1  \
-    1  \
+    $TP  \
+    $PP  \
     1 \
-    fp32 \
+    fp16 \
     false \
     true \
-    ${MEGATRON_PATH}/examples/qwen2/qwen-ckpts/Qwen2-0.5B
+    ${MEGATRON_PATH}/examples/qwen2/qwen-ckpts/Qwen2-7B
     popd
 }

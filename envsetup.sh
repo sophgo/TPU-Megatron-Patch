@@ -1,0 +1,1 @@
+export PYTHONPATH=$PYTHONPATH:${PWD}:${PWD}/evaluate/src

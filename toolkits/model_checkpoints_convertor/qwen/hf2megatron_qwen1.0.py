@@ -732,60 +732,64 @@ def convert_checkpoint_from_megatron_to_transformers(args):
     else:
         dtype = torch.float32
 
-    if megatron_args.hidden_size == 2048:
-        config = QWenConfig_14b(
-            auto_map={
-            "AutoConfig": "configuration_qwen.QWenConfig",
-            "AutoModelForCausalLM": "modeling_qwen.QWenLMHeadModel"},
-            architectures="QWenLMHeadModel",
-            vocab_size=151936,
-            hidden_size=2048,
-            num_hidden_layers=24,
-            num_attention_heads=16,
-            intermediate_size=11008,
-            seq_length=8192,
-        )
-    elif megatron_args.hidden_size == 4096:
-        config = QWenConfig(
-            auto_map={
-            "AutoConfig": "configuration_qwen.QWenConfig",
-            "AutoModelForCausalLM": "modeling_qwen.QWenLMHeadModel"},
-            architectures="QWenLMHeadModel",
-            padded_vocab_size=151936,
-            n_positions=6144,
-            pos_emb="rotary",
-            params_dtype="torch.bfloat16",
-            seq_length=2048,
-            tokenizer_type="QWenTokenizer",
-            layer_norm_epsilon=1e-06,
-            resid_pdrop=0.1,
-        )  
-    elif megatron_args.hidden_size == 5120:
-        config = QWenConfig_14b(
-            auto_map={
-            "AutoConfig": "configuration_qwen.QWenConfig",
-            "AutoModelForCausalLM": "modeling_qwen.QWenLMHeadModel"},
-            architectures="QWenLMHeadModel",
-            vocab_size=152064,
-            hidden_size=5120,
-            num_hidden_layers=40,
-            num_attention_heads=40,
-            intermediate_size=27392,
-            seq_length=2048,
-        )
-    elif megatron_args.hidden_size == 8192:
-        config = QWenConfig_14b(
-            auto_map={
-            "AutoConfig": "configuration_qwen.QWenConfig",
-            "AutoModelForCausalLM": "modeling_qwen.QWenLMHeadModel"},
-            architectures="QWenLMHeadModel",
-            vocab_size=152064,
-            hidden_size=8192,
-            num_hidden_layers=80,
-            num_attention_heads=64,
-            intermediate_size=24576,
-            seq_length=2048,
-        )
+    from megatron_patch.model.qwen2.transformer_config import Qwen2TransformerConfig
+    from megatron.training.arguments import core_transformer_config_from_args
+
+    config = core_transformer_config_from_args(args, Qwen2TransformerConfig)
+    # if megatron_args.hidden_size == 2048:
+    #     config = QWenConfig_14b(
+    #         auto_map={
+    #         "AutoConfig": "configuration_qwen.QWenConfig",
+    #         "AutoModelForCausalLM": "modeling_qwen.QWenLMHeadModel"},
+    #         architectures="QWenLMHeadModel",
+    #         vocab_size=151936,
+    #         hidden_size=2048,
+    #         num_hidden_layers=24,
+    #         num_attention_heads=16,
+    #         intermediate_size=11008,
+    #         seq_length=8192,
+    #     )
+    # elif megatron_args.hidden_size == 4096:
+    #     config = QWenConfig(
+    #         auto_map={
+    #         "AutoConfig": "configuration_qwen.QWenConfig",
+    #         "AutoModelForCausalLM": "modeling_qwen.QWenLMHeadModel"},
+    #         architectures="QWenLMHeadModel",
+    #         padded_vocab_size=151936,
+    #         n_positions=6144,
+    #         pos_emb="rotary",
+    #         params_dtype="torch.bfloat16",
+    #         seq_length=2048,
+    #         tokenizer_type="QWenTokenizer",
+    #         layer_norm_epsilon=1e-06,
+    #         resid_pdrop=0.1,
+    #     )  
+    # elif megatron_args.hidden_size == 5120:
+    #     config = QWenConfig_14b(
+    #         auto_map={
+    #         "AutoConfig": "configuration_qwen.QWenConfig",
+    #         "AutoModelForCausalLM": "modeling_qwen.QWenLMHeadModel"},
+    #         architectures="QWenLMHeadModel",
+    #         vocab_size=152064,
+    #         hidden_size=5120,
+    #         num_hidden_layers=40,
+    #         num_attention_heads=40,
+    #         intermediate_size=27392,
+    #         seq_length=2048,
+    #     )
+    # elif megatron_args.hidden_size == 8192:
+    #     config = QWenConfig_14b(
+    #         auto_map={
+    #         "AutoConfig": "configuration_qwen.QWenConfig",
+    #         "AutoModelForCausalLM": "modeling_qwen.QWenLMHeadModel"},
+    #         architectures="QWenLMHeadModel",
+    #         vocab_size=152064,
+    #         hidden_size=8192,
+    #         num_hidden_layers=80,
+    #         num_attention_heads=64,
+    #         intermediate_size=24576,
+    #         seq_length=2048,
+    #     )
     output_state_dict = {}
 
     checkpoint_version = state_dict.get("checkpoint_version", 3.0)

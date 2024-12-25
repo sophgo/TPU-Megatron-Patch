@@ -4,15 +4,11 @@
 import os
 from functools import partial
 from typing import Union
-
+import sys
 import torch
 # import torch._dynamo
-try:
-    import torch_tpu
-    from torch_tpu import workarounds
-except ImportError:
-    pass
-
+import torch_tpu
+from torch_tpu import workarounds
 from torch_tpu import accelerator
 
 from distutils.util import strtobool

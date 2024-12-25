@@ -21,7 +21,9 @@ from torch_tpu import accelerator
 
 
 from megatron.training import get_args
-from transformers.modeling_utils import WEIGHTS_INDEX_NAME, WEIGHTS_NAME, shard_checkpoint, load_sharded_checkpoint
+from transformers.modeling_utils import WEIGHTS_INDEX_NAME, WEIGHTS_NAME, load_sharded_checkpoint
+from accelerate.utils.modeling import shard_checkpoint
+
 from megatron.training.initialize import initialize_megatron
 from megatron.training.checkpointing import get_checkpoint_name, get_checkpoint_tracker_filename, read_metadata
 from functools import partial
@@ -67,7 +69,7 @@ def add_model_args(parser):
 
     parser.add_argument(
         "--save-safetensors",
-        action='store_false',
+        action='store_true',
     )
 
     return parser
