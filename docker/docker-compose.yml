@@ -1,0 +1,29 @@
+name: tpu-train-dev
+services:
+    cmodel-v1:
+        privileged: true
+        ports:
+            - 8200:22
+        ipc: host
+        shm_size: 32G
+        volumes:
+            # add ssh config 
+            - /usr/sbin/sshd:/usr/sbin/sshd
+            - /etc/ssh/sshd_config:/etc/ssh/sshd_config
+            - /run/sshd:/run/sshd
+            # for docker to use the host's user and group
+            - /etc/passwd:/etc/passwd
+            - /etc/group:/etc/group
+            - /etc/shadow:/etc/shadow
+            - /etc/sudoers:/etc/sudoers
+            - /data:/data
+            - /dev:/dev
+            - /opt:/opt
+            # add your own data path
+            - $HOME:$HOME
+            - /workspace:/workspace
+            - /workspace/bm_prebuilt_toolchains:/workspace/bm_prebuilt_toolchains
+            - /data/nvme2:/data/nvme2
+        image: sophgo/torch_tpu:v0.1
+        network_mode: bridge
+        entrypoint: /usr/sbin/sshd -D
